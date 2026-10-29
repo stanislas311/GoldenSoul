@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE "messages" ADD COLUMN     "luLe" TIMESTAMP(3),
+ADD COLUMN     "recu" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "recuLe" TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "users" ADD COLUMN     "derniereActivite" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN     "enLigne" BOOLEAN NOT NULL DEFAULT false;

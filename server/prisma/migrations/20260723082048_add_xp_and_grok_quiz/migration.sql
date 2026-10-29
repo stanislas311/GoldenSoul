@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE "quizzes" ADD COLUMN     "grokGenerated" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "xpReward" INTEGER NOT NULL DEFAULT 50;
+
+-- AlterTable
+ALTER TABLE "users" ADD COLUMN     "level" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN     "xpPoints" INTEGER NOT NULL DEFAULT 0;

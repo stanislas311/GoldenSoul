@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+:root {
+  /* Default Dark Theme */
+  --theme-ink: #0F1B1A;
+  --theme-jade: #1B2E2C;
+  --theme-gold: #D4AF37;
+  --theme-gold-light: #e6ca6f;
+  --theme-ivory: #F3EEE2;
+  --theme-sage: #7C9885;
+  --theme-burnt: #8A7268;
+
+  /* Utilitaires Glassmorphism (Sombre) */
+  --glass-panel-bg: rgba(27, 46, 44, 0.6);
+  --glass-panel-border: rgba(243, 238, 226, 0.1);
+  --glass-nav-bg: rgba(15, 27, 26, 0.85);
+  --glass-nav-border: rgba(212, 175, 55, 0.15);
+}
+
+.theme-light {
+  /* Light Beige Theme */
+  --theme-ink: #F5F1E7;
+  --theme-jade: #E8E2D2;
+  --theme-gold: #B8860B; /* Or plus sombre pour contraste */
+  --theme-gold-light: #D4AF37;
+  --theme-ivory: #2C3E3A; /* Gris/Vert foncé pour le texte */
+  --theme-sage: #5A7163;
+  --theme-burnt: #6B5750;
+
+  /* Utilitaires Glassmorphism (Clair) */
+  --glass-panel-bg: rgba(232, 226, 210, 0.6);
+  --glass-panel-border: rgba(44, 62, 58, 0.1);
+  --glass-nav-bg: rgba(245, 241, 231, 0.85);
+  --glass-nav-border: rgba(184, 134, 11, 0.25);
+}
+
+@theme {
+  --color-ink: var(--theme-ink);
+  --color-jade: var(--theme-jade);
+  --color-gold: var(--theme-gold);
+  --color-gold-light: var(--theme-gold-light);
+  --color-ivory: var(--theme-ivory);
+  --color-sage: var(--theme-sage);
+  --color-burnt: var(--theme-burnt);
+
+  --font-display: "Outfit", sans-serif;
+  --font-body: "DM Sans", sans-serif;
+}
+
+body {
+  background-color: var(--color-ink);
+  color: var(--color-ivory);
+  font-family: var(--font-body);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Utilitaires pour le Glassmorphism (Effet verre dépoli) */
+.glass-panel {
+  background: var(--glass-panel-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-panel-border);
+}
+
+.glass-nav {
+  background: var(--glass-nav-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--glass-nav-border);
+}
+
+/* Custom Scrollbar pour Desktop */
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}

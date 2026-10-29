@@ -1,0 +1,326 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PATIENT
+  PRATICIEN
+}
+
+enum Genre {
+  HOMME
+  FEMME
+  AUTRE
+}
+
+enum SituationMatrimoniale {
+  CELIBATAIRE
+  MARIE
+  DIVORCE
+  VEUF
+}
+
+enum Langue {
+  FR
+  EN
+}
+
+model User {
+  id         String @id @default(uuid())
+  nom        String
+  email      String @unique
+  motDePasse String
+  role       Role   @default(PATIENT)
+
+  // Spécifique patient
+  telephone             String?
+  genre                 Genre?
+  dateNaissance         DateTime?
+  situationMatrimoniale SituationMatrimoniale?
+
+  // Spécifique praticien
+  bio            String?
+  numeroPaiement String?
+
+  // Communs
+  photoUrl       String?
+  languePreferee Langue  @default(FR)
+
+  // 2FA
+  twoFactorSecret String?
+  twoFactorActif  Boolean @default(false)
+
+  // Gamification (Quiz XP)
+  xpPoints Int @default(0)
+  level    Int @default(1)
+
+  // Consentement (écran accepter/refuser)
+  consentementAccepte Boolean   @default(false)
+  consentementDate    DateTime?
+  consentementVersion String?
+
+  // Emails
+  accepteAnnonces Boolean @default(true)
+  emailVerifie    Boolean @default(false)
+
+  // État en ligne
+  enLigne          Boolean  @default(false)
+  derniereActivite DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions  Session[]
+  auditLogs AuditLog[]
+
+  @@map("users")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String
+  expireLe  DateTime
+  utilise   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+enum StatutSession {
+  EN_ATTENTE_PAIEMENT
+  EN_ATTENTE_CONFIRMATION
+  CONFIRMEE
+  EN_COURS
+  TERMINEE
+  ANNULEE
+  ABSENCE
+}
+
+enum StatutPaiement {
+  EN_ATTENTE
+  PAYE
+  ECHOUE
+  REMBOURSE
+  REMBOURSEMENT_EN_COURS
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  praticienId String
+  patientId   String
+  action      String
+  createdAt   DateTime @default(now())
+
+  praticien User @relation(fields: [praticienId], references: [id])
+
+  @@index([patientId])
+  @@map("audit_logs")
+}
+
+model Availability {
+  id        String   @id @default(uuid())
+  dateDebut DateTime
+  dateFin   DateTime
+  reserve   Boolean  @default(false)
+  visible   Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  sessions Session[]
+
+  @@unique([dateDebut])
+  @@index([dateDebut, visible, reserve])
+  @@map("availabilities")
+}
+
+model Session {
+  id             String @id @default(uuid())
+  patientId      String
+  availabilityId String
+
+  statut         StatutSession @default(EN_ATTENTE_PAIEMENT)
+  optionSecurite Boolean       @default(false)
+
+  lienVisio    String?
+  noteClinique String?
+  rappelEnvoye Boolean @default(false)
+
+  expireLe           DateTime
+  confirmeLe         DateTime?
+  paiementConfirmeLe DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  patient      User         @relation(fields: [patientId], references: [id])
+  availability Availability @relation(fields: [availabilityId], references: [id])
+  paiement     Payment?
+  avis         Avis?
+
+  @@index([patientId])
+  @@index([availabilityId])
+  @@index([statut, expireLe])
+  @@index([statut, paiementConfirmeLe])
+  @@map("sessions")
+}
+
+model Payment {
+  id               String         @id @default(uuid())
+  sessionId        String         @unique
+  montant          Int
+  statut           StatutPaiement @default(EN_ATTENTE)
+  referenceExterne String?
+  codeReference    String?        @unique
+  preuveUrl        String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  session Session @relation(fields: [sessionId], references: [id])
+
+  @@map("payments")
+}
+
+model Avis {
+  id        String   @id @default(uuid())
+  sessionId String   @unique
+  note      Int
+  createdAt DateTime @default(now())
+
+  session Session @relation(fields: [sessionId], references: [id])
+
+  @@map("avis")
+}
+
+model Notification {
+  id             String   @id @default(uuid())
+  userId         String
+  type           String
+  contenu        String
+  lu             Boolean  @default(false)
+  sessionId      String?
+  patientId      String?
+  conversationId String?
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+  @@map("notifications")
+}
+
+model Quiz {
+  id            String   @id @default(uuid())
+  titre         String
+  description   String?
+  actif         Boolean  @default(true)
+  grokGenerated Boolean  @default(false)
+  xpReward      Int      @default(50)
+  createdById   String?
+  createdAt     DateTime @default(now())
+
+  questions Question[]
+  reponses  QuizResponse[]
+
+  @@index([createdById])
+  @@map("quizzes")
+}
+
+model Question {
+  id     String @id @default(uuid())
+  quizId String
+  texte  String
+  ordre  Int    @default(0)
+
+  quiz     Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  options  QuestionOption[]
+  reponses Answer[]
+
+  @@index([quizId])
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         String @id @default(uuid())
+  questionId String
+  texte      String
+  valeur     Int
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@map("question_options")
+}
+
+model QuizResponse {
+  id         String   @id @default(uuid())
+  quizId     String
+  patientId  String
+  scoreTotal Int?
+  analyseIA  String?
+  createdAt  DateTime @default(now())
+
+  quiz     Quiz     @relation(fields: [quizId], references: [id])
+  reponses Answer[]
+
+  @@index([patientId])
+  @@map("quiz_responses")
+}
+
+model Answer {
+  id             String @id @default(uuid())
+  quizResponseId String
+  questionId     String
+  valeurChoisie  Int
+
+  quizResponse QuizResponse @relation(fields: [quizResponseId], references: [id], onDelete: Cascade)
+  question     Question     @relation(fields: [questionId], references: [id])
+
+  @@index([quizResponseId])
+  @@map("answers")
+}
+
+model Conversation {
+  id        String   @id @default(uuid())
+  patientId String   @unique
+  createdAt DateTime @default(now())
+
+  messages Message[]
+
+  @@map("conversations")
+}
+
+model Message {
+  id               String    @id @default(uuid())
+  conversationId   String
+  expediteurId     String
+  contenu          String?
+  type             String    @default("TEXTE") // TEXTE, IMAGE, FICHIER, VOCAL
+  fichierUrl       String?
+  fichierNom       String?
+  fichierTaille    Int?
+  dureeVocal       Int? // en secondes
+  lu               Boolean   @default(false)
+  luLe             DateTime?
+  recu             Boolean   @default(false)
+  recuLe           DateTime?
+  modifie          Boolean   @default(false)
+  modifieLe        DateTime?
+  supprime         Boolean   @default(false)
+  supprimeLe       DateTime?
+  messageIdReponse String? // ID du message auquel on répond
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @default(now()) @updatedAt
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  reponses       Message[]    @relation("MessageReponses")
+  messageReponse Message?     @relation("MessageReponses", fields: [messageIdReponse], references: [id])
+
+  @@index([conversationId])
+  @@index([messageIdReponse])
+  @@index([conversationId, lu, expediteurId])
+  @@map("messages")
+}
